@@ -7,6 +7,7 @@
 extern void idt_init(void);
 extern void pic_init(void);
 extern void keyboard_init(void);
+extern void memory_init(void);
 
 void kernel_main(uint64_t magic, uint64_t addr) {
     /* Initialize serial port for debugging */
@@ -33,6 +34,10 @@ void kernel_main(uint64_t magic, uint64_t addr) {
     /* Initialize keyboard */
     printf("Setting up keyboard...\n");
     keyboard_init();
+
+    /* Initialize memory allocator */
+    printf("Setting up memory allocator...\n");
+    memory_init();
 
     /* VGA 메모리에 직접 접근 */
     uint16_t *vga = (uint16_t *)0xB8000;

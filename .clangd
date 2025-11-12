@@ -1,0 +1,12 @@
+CompileFlags:
+  Add:
+    - -x
+    - c
+    - -ffreestanding
+    - -m64
+    - -nostdlib
+    - -I/home/coti/git/micro/src/include
+  Remove:
+    - -fno-pie
+    - -Werror
+    - -Winfinite-recursion

@@ -2,22 +2,45 @@ CC = gcc
 LD = ld
 AS = as
 
-CFLAGS = -std=c99 -ffreestanding -O2 -Wall -Wextra -m64 -nostdlib
+CFLAGS = -std=c99 -ffreestanding -O2 -Wall -Wextra -m64 -nostdlib -fno-stack-protector -I/home/coti/git/micro/src/include
 ASFLAGS = --64
 LDFLAGS = -T linker.ld -m elf_x86_64
 
-OBJ = src/boot.o src/kernel.o
+BUILD_DIR = build
+
+OBJ = \
+	$(BUILD_DIR)/boot.o \
+	$(BUILD_DIR)/kernel.o \
+	$(BUILD_DIR)/idt.o \
+	$(BUILD_DIR)/exception.o \
+	$(BUILD_DIR)/exception_asm.o \
+	$(BUILD_DIR)/timer.o \
+	$(BUILD_DIR)/pic.o \
+	$(BUILD_DIR)/irq_asm.o \
+	$(BUILD_DIR)/serial.o \
+	$(BUILD_DIR)/printf.o \
+	$(BUILD_DIR)/panic.o
+
 KERNEL = iso/boot/kernel.elf
 ISO = micro.iso
 
-.PHONY: all clean qemu
+.PHONY: all clean qemu qemu-debug
 
 all: $(ISO)
 
-src/%.o: src/%.s
-	$(AS) $< -o $@
+$(BUILD_DIR):
+	mkdir -p $(BUILD_DIR)
 
-src/%.o: src/%.c
+$(BUILD_DIR)/%.o: src/boot/%.s | $(BUILD_DIR)
+	$(AS) $(ASFLAGS) $< -o $@
+
+$(BUILD_DIR)/%.o: src/kernel/%.s | $(BUILD_DIR)
+	$(AS) $(ASFLAGS) $< -o $@
+
+$(BUILD_DIR)/%.o: src/kernel/%.c | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/%.o: src/io/%.c | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(KERNEL): $(OBJ)
@@ -30,11 +53,11 @@ $(ISO): $(KERNEL) iso/boot/grub/grub.cfg
 	grub-mkrescue -o $(ISO) iso/
 
 clean:
-	rm -f src/*.o $(KERNEL) $(ISO)
+	rm -rf $(BUILD_DIR) $(KERNEL) $(ISO)
 	rm -f iso/boot/grub/grub.cfg
 
 qemu: $(ISO)
-	qemu-system-x86_64 -boot d -cdrom $(ISO) 
+	qemu-system-x86_64 -boot d -cdrom $(ISO) -serial stdio
 
 qemu-debug: $(ISO)
-	qemu-system-x86_64 -boot d -cdrom $(ISO) -s -S 
+	qemu-system-x86_64 -boot d -cdrom $(ISO) -serial stdio -s -S

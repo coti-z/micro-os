@@ -36,8 +36,8 @@ void pic_init(void) {
     __outb(PIC1_DATA, ICW4);
     __outb(PIC2_DATA, ICW4);
 
-    /* Mask all interrupts except timer (IRQ0) */
-    __outb(PIC1_DATA, 0xFE); /* 11111110 - allow IRQ0, mask others */
+    /* OCW1: Mask interrupts (allow IRQ0 and IRQ1) */
+    __outb(PIC1_DATA, 0xFC); /* 11111100 - allow IRQ0 and IRQ1, mask others */
     __outb(PIC2_DATA, 0xFF); /* 11111111 - mask all slave IRQs */
 
     printf("PIC initialized\n");

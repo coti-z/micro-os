@@ -6,6 +6,7 @@
 /* External initializations */
 extern void idt_init(void);
 extern void pic_init(void);
+extern void keyboard_init(void);
 
 void kernel_main(uint64_t magic, uint64_t addr) {
     /* Initialize serial port for debugging */
@@ -28,6 +29,10 @@ void kernel_main(uint64_t magic, uint64_t addr) {
     /* Initialize timer */
     printf("Setting up timer...\n");
     timer_init(11932);  /* ~100 Hz (1193182 / 11932 ≈ 100) */
+
+    /* Initialize keyboard */
+    printf("Setting up keyboard...\n");
+    keyboard_init();
 
     /* VGA 메모리에 직접 접근 */
     uint16_t *vga = (uint16_t *)0xB8000;

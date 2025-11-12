@@ -15,6 +15,7 @@ OBJ = \
 	$(BUILD_DIR)/exception.o \
 	$(BUILD_DIR)/exception_asm.o \
 	$(BUILD_DIR)/timer.o \
+	$(BUILD_DIR)/keyboard.o \
 	$(BUILD_DIR)/pic.o \
 	$(BUILD_DIR)/irq_asm.o \
 	$(BUILD_DIR)/serial.o \

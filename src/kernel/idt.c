@@ -46,6 +46,7 @@ extern void isr19(void);
 
 /* Forward declarations for IRQ handlers (defined in irq_asm.s) */
 extern void irq0(void);  /* Timer */
+extern void irq1(void);
 
 /* Set IDT entry */
 static void idt_set_entry(int index, uint64_t handler, uint8_t type) {
@@ -86,6 +87,7 @@ void idt_init(void) {
 
     /* Set IRQ handlers (starting at interrupt 32) */
     idt_set_entry(32, (uint64_t)irq0, 0x8E);  /* Timer (IRQ 0) */
+    idt_set_entry(33, (uint64_t)irq1, 0x8E);  /* Keyboard */ 
 
     /* Load IDT */
     idt_descriptor_t idt_desc;

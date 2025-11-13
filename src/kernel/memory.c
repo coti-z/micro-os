@@ -1,77 +1,120 @@
 #include "memory.h"
 #include "io.h"
 
-/* Block header */
-typedef struct block {
-    size_t size;        /* Data size (excluding header) */
-    int is_free;        /* 1 = free, 0 = allocated */
-    struct block *next; /* Next block in list */
-} block_t;
+/* Memory allocator by Kernighan and Ritchie,
+ * The C programming Language, 2nd ed.  Section 8.7.
+ */
 
-/* Heap metadata */
-static block_t *heap_start = NULL;
-static char *heap_end = NULL;
+typedef long Align;
 
-/* Initialize heap */
-void memory_init(void) {
-    printf("Initializing memory allocator...\n");
+union header {
+  struct {
+    union header *ptr;
+    uint size;
+  } s;
+  Align x;
+};
 
-    /* Heap starts at HEAP_START */
-    heap_start = (block_t *)HEAP_START;
-    heap_end = (char *)HEAP_START + HEAP_SIZE;
+typedef union header Header;
 
-    /* Create initial free block covering entire heap */
-    heap_start->size = HEAP_SIZE - sizeof(block_t);
-    heap_start->is_free = 1;
-    heap_start->next = NULL;
+static Header base;
+static Header *freep;
 
-    printf("Heap initialized: 0x%p - 0x%p (%d KB)\n",
-           (void *)HEAP_START,
-           (void *)(HEAP_START + HEAP_SIZE),
-           HEAP_SIZE / 1024);
+/* Heap allocation */
+static uint8_t heap[HEAP_SIZE];
+static uint heap_used = 0;
+
+void
+memory_init(void)
+{
+  printf("Initializing memory allocator...\n");
+  base.s.ptr = freep = &base;
+  base.s.size = 0;
+  printf("Heap initialized: 0x%p - 0x%p (%d KB)\n",
+         (void *)heap, (void *)(heap + HEAP_SIZE), HEAP_SIZE / 1024);
 }
 
-/* Allocate memory */
-void *malloc(size_t size) {
-    if (size == 0) return NULL;
+static Header*
+morecore(uint nu)
+{
+  char *p;
+  Header *hp;
 
-    block_t *current = heap_start;
+  if (nu < 4096)
+    nu = 4096;
 
-    /* Find first free block large enough */
-    while (current) {
-        if (current->is_free && current->size >= size) {
-            /* Split block if it's larger than needed */
-            if (current->size > size + sizeof(block_t)) {
-                block_t *new_block = (block_t *)((char *)current + sizeof(block_t) + size);
-                new_block->size = current->size - size - sizeof(block_t);
-                new_block->is_free = 1;
-                new_block->next = current->next;
+  /* Check if we have enough space */
+  if (heap_used + nu * sizeof(Header) > HEAP_SIZE)
+    return 0;
 
-                current->size = size;
-                current->next = new_block;
-            }
+  p = (char *)heap + heap_used;
+  heap_used += nu * sizeof(Header);
 
-            current->is_free = 0;
-            return (void *)((char *)current + sizeof(block_t));
-        }
-        current = current->next;
-    }
-
-    printf("malloc failed: no memory (size=%d)\n", (int)size);
-    return NULL;
+  hp = (Header*)p;
+  hp->s.size = nu;
+  free((void*)(hp + 1));
+  return freep;
 }
 
-/* Free memory */
-void free(void *ptr) {
-    if (ptr == NULL) return;
+void
+free(void *ap)
+{
+  Header *bp, *p;
 
-    /* Get block header (located before data) */
-    block_t *block = (block_t *)ptr - 1;
-    block->is_free = 1;
+  bp = (Header*)ap - 1;
+  for(p = freep; !(bp > p && bp < p->s.ptr); p = p->s.ptr)
+    if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))
+      break;
+  if(bp + bp->s.size == p->s.ptr){
+    bp->s.size += p->s.ptr->s.size;
+    bp->s.ptr = p->s.ptr->s.ptr;
+  } else
+    bp->s.ptr = p->s.ptr;
+  if(p + p->s.size == bp){
+    p->s.size += bp->s.size;
+    p->s.ptr = bp->s.ptr;
+  } else
+    p->s.ptr = bp;
+  freep = p;
+}
 
-    /* Simple coalescing: merge with next free block */
-    if (block->next && block->next->is_free) {
-        block->size += sizeof(block_t) + block->next->size;
-        block->next = block->next->next;
+void*
+malloc(uint nbytes)
+{
+  Header *p, *prevp;
+  uint nunits;
+
+  nunits = (nbytes + sizeof(Header) - 1)/sizeof(Header) + 1;
+  if((prevp = freep) == 0){
+    base.s.ptr = freep = prevp = &base;
+    base.s.size = 0;
+  }
+  for(p = prevp->s.ptr; ; prevp = p, p = p->s.ptr){
+    if(p->s.size >= nunits){
+      if(p->s.size == nunits)
+        prevp->s.ptr = p->s.ptr;
+      else {
+        p->s.size -= nunits;
+        p += p->s.size;
+        p->s.size = nunits;
+      }
+      freep = prevp;
+      return (void*)(p + 1);
     }
+    if(p == freep)
+      if((p = morecore(nunits)) == 0)
+        return 0;
+  }
+}
+
+/* Set memory to value */
+void *memset(void *s, int c, size_t n) {
+    unsigned char *p = (unsigned char *)s;
+    unsigned char val = (unsigned char)c;
+
+    for (size_t i = 0; i < n; i++) {
+        p[i] = val;
+    }
+
+    return s;
 }

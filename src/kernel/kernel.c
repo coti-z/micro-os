@@ -2,12 +2,17 @@
 #include "io.h"
 #include "exception.h"
 #include "timer.h"
+#include "process.h"
 
 /* External initializations */
 extern void idt_init(void);
 extern void pic_init(void);
 extern void keyboard_init(void);
 extern void memory_init(void);
+
+/* External process tasks */
+extern void idle_task_1(void);
+extern void idle_task_2(void);
 
 void kernel_main(uint64_t magic, uint64_t addr) {
     /* Initialize serial port for debugging */
@@ -39,29 +44,32 @@ void kernel_main(uint64_t magic, uint64_t addr) {
     printf("Setting up memory allocator...\n");
     memory_init();
 
-    /* VGA 메모리에 직접 접근 */
-    uint16_t *vga = (uint16_t *)0xB8000;
+    /* Initialize process management */
+    printf("\nSetting up process management...\n");
+    process_init();
 
-    /* 스크린 클리어 */
-    for (int i = 0; i < 80 * 25; i++) {
-        vga[i] = (0x0F << 8) | ' ';
+    /* Create test processes */
+    printf("\nCreating test processes...\n");
+    process_t *proc1 = process_create("idle_task_1", idle_task_1);
+    if (proc1) {
+        printf("✓ Process 1: pid=%d, name=%s\n", proc1->pid, proc1->name);
     }
 
-    /* 문자 출력 */
-    const char *str = "Hello from 64-bit kernel!";
-    for (int i = 0; str[i]; i++) {
-        vga[i] = (0x0F << 8) | str[i];
+    process_t *proc2 = process_create("idle_task_2", idle_task_2);
+    if (proc2) {
+        printf("✓ Process 2: pid=%d, name=%s\n", proc2->pid, proc2->name);
     }
 
-    printf("\nKernel is ready.\n");
-    printf("Enabling interrupts...\n");
+    printf("\n====================================\n");
+    printf("  Kernel initialization complete!\n");
+    printf("  (Scheduler not yet implemented)\n");
+    printf("====================================\n");
 
     /* Enable interrupts */
     __asm__("sti");
 
-    printf("Waiting for timer interrupts...\n");
-
-    /* 무한 루프 */
+    /* Should not reach here */
+    printf("\nProcess returned (unexpected!)\n");
     while (1) {
         __asm__("hlt");
     }

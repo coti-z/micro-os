@@ -36,9 +36,9 @@ void pic_init(void) {
     __outb(PIC1_DATA, ICW4);
     __outb(PIC2_DATA, ICW4);
 
-    /* OCW1: Mask interrupts (allow IRQ0 and IRQ1) */
-    __outb(PIC1_DATA, 0xFC); /* 11111100 - allow IRQ0 and IRQ1, mask others */
-    __outb(PIC2_DATA, 0xFF); /* 11111111 - mask all slave IRQs */
+    /* OCW1: Mask interrupts (allow IRQ0, IRQ1, IRQ2, and IRQ12) */
+    __outb(PIC1_DATA, 0xF8); /* 11111000 - allow IRQ0, IRQ1, IRQ2 (cascade), mask others */
+    __outb(PIC2_DATA, 0xEF); /* 11101111 - allow IRQ12 (bit 4), mask others */
 
     printf("PIC initialized\n");
 }

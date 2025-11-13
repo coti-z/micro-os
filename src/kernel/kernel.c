@@ -9,6 +9,7 @@
 extern void idt_init(void);
 extern void pic_init(void);
 extern void keyboard_init(void);
+extern void mouse_init(void);
 extern void memory_init(void);
 
 /* External process tasks */
@@ -40,6 +41,10 @@ void kernel_main(uint64_t magic, uint64_t addr) {
     /* Initialize keyboard */
     printf("Setting up keyboard...\n");
     keyboard_init();
+
+    /* Initialize mouse */
+    printf("Setting up mouse...\n");
+    mouse_init();
 
     /* Initialize memory allocator */
     printf("Setting up memory allocator...\n");

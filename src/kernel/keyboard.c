@@ -16,7 +16,7 @@ void keyboard_handler(void) {
     keyboard_buffer[keyboard_head] = scancode;
     keyboard_head = (keyboard_head + 1) % 256;
 
-    printf("key pressed 0x%x\n", scancode);
+    // printf("key pressed 0x%x\n", scancode);
 }
 
 

@@ -16,6 +16,7 @@ OBJ = \
 	$(BUILD_DIR)/exception_asm.o \
 	$(BUILD_DIR)/timer.o \
 	$(BUILD_DIR)/keyboard.o \
+	$(BUILD_DIR)/mouse.o \
 	$(BUILD_DIR)/pic.o \
 	$(BUILD_DIR)/irq_asm.o \
 	$(BUILD_DIR)/memory.o \
@@ -65,7 +66,7 @@ clean:
 	rm -f iso/boot/grub/grub.cfg
 
 qemu: $(ISO)
-	qemu-system-x86_64 -boot d -cdrom $(ISO) -serial stdio
+	qemu-system-x86_64 -boot d -cdrom $(ISO) -serial stdio -device isa-debug-exit
 
 qemu-debug: $(ISO)
 	qemu-system-x86_64 -boot d -cdrom $(ISO) -serial stdio -s -S

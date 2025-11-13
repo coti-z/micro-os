@@ -67,6 +67,14 @@ int printf(const char *format, ...) {
                 format++;
             }
 
+            /* Handle length modifier (l, ll) */
+            if (*format == 'l') {
+                format++;
+                if (*format == 'l') {
+                    format++;  /* Skip ll */
+                }
+            }
+
             /* Handle format specifier */
             switch (*format) {
                 case 'd':

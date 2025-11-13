@@ -1,4 +1,5 @@
 #include "timer.h"
+#include "scheduler.h"
 #include "io.h"
 
 /* Global timer tick counter */
@@ -33,11 +34,27 @@ void timer_init(uint16_t divisor) {
 }
 
 /* Timer interrupt handler */
-void timer_handler(void) {
+void timer_handler(uint64_t *stack_ptr) {
+    (void)stack_ptr;  /* Unused parameter */
+
+    /* Output 'T' directly to serial port to verify handler is called */
+    if (timer_ticks % 1000 == 0) {
+        __outb(0x3F8, 'T');  /* Direct serial output */
+    }
+
     timer_ticks++;
 
-    /* Print every 1000 ticks (roughly every second at ~1000 Hz) */
-    if (timer_ticks % 1000 == 0) {
-        printf("Timer: %d seconds elapsed\n", timer_ticks / 1000);
+    /* Print timer interrupt to debug */
+    if (timer_ticks % 100 == 0) {
+        process_t *p = myproc();
+        if (p) {
+            printf("[TIMER-%d] process=%s (pid=%d)\n",
+                   (int)timer_ticks, p->name, p->pid);
+        } else {
+            printf("[TIMER-%d] no process\n", (int)timer_ticks);
+        }
     }
+
+    /* Don't yield in interrupt handler - causes pending interrupt buildup! */
+    /* Processes should yield themselves for cooperative scheduling */
 }

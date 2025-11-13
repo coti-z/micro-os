@@ -10,6 +10,6 @@ extern volatile uint64_t timer_ticks;
 void timer_init(uint16_t divisor);
 
 /* Timer interrupt handler */
-void timer_handler(void);
+void timer_handler(uint64_t *stack_ptr);
 
 #endif /* _TIMER_H_ */

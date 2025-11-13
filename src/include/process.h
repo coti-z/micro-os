@@ -2,6 +2,7 @@
 #define PROCESS_H
 
 #include <stdint.h>
+#include "spinlock.h"
 
 #define MAX_PROCESSES 64
 #define PROCESS_STACK_SIZE 4096  /* 4KB stack per process */
@@ -29,13 +30,15 @@ typedef struct {
     char name[32];
     process_state_t state;
     void *stack;                  /* Allocated stack */
-    context_t context;            /* For future context switching */
+    context_t context;            /* For context switching */
     void (*entry_point)(void);    /* Function pointer to process entry */
+    spinlock_t lock;              /* Protects this process's state */
 } process_t;
 
 /* Process management functions */
 void process_init(void);
 process_t *process_create(const char *name, void (*entry)(void));
 process_t *process_get(int pid);
+process_t *process_get_by_index(int index);
 
 #endif

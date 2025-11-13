@@ -3,6 +3,7 @@
 #include "exception.h"
 #include "timer.h"
 #include "process.h"
+#include "scheduler.h"
 
 /* External initializations */
 extern void idt_init(void);
@@ -62,15 +63,16 @@ void kernel_main(uint64_t magic, uint64_t addr) {
 
     printf("\n====================================\n");
     printf("  Kernel initialization complete!\n");
-    printf("  (Scheduler not yet implemented)\n");
+    printf("  Starting scheduler...\n");
     printf("====================================\n");
 
     /* Enable interrupts */
     __asm__("sti");
 
-    /* Should not reach here */
-    printf("\nProcess returned (unexpected!)\n");
-    while (1) {
+
+    while(1) {
         __asm__("hlt");
     }
+    /* Should never reach here */
+    panic("scheduler returned!");
 }

@@ -1,10 +1,15 @@
 #include "process.h"
 #include "memory.h"
+#include "spinlock.h"
+#include "scheduler.h"
 #include "io.h"
 
 /* Process table */
 static process_t process_table[MAX_PROCESSES];
 static int next_pid = 1;
+
+/* Static stacks for processes (outside heap) */
+static uint8_t process_stacks[MAX_PROCESSES][PROCESS_STACK_SIZE] __attribute__((aligned(16)));
 
 /* Initialize process management */
 void process_init(void) {
@@ -16,6 +21,8 @@ void process_init(void) {
         process_table[i].pid = 0;
         process_table[i].stack = NULL;
         process_table[i].entry_point = NULL;
+        /* Zero out the context structure */
+        memset(&process_table[i].context, 0, sizeof(context_t));
     }
 
     printf("Process table initialized (%d slots)\n", MAX_PROCESSES);
@@ -42,12 +49,9 @@ process_t *process_create(const char *name, void (*entry)(void)) {
         return NULL;
     }
 
-    /* Allocate stack for the process */
-    proc->stack = malloc(PROCESS_STACK_SIZE);
-    if (!proc->stack) {
-        printf("Error: Failed to allocate stack\n");
-        return NULL;
-    }
+    /* Use static stack (outside heap to avoid conflicts) */
+    int proc_index = proc - process_table;
+    proc->stack = process_stacks[proc_index];
 
     /* Initialize process control block */
     proc->pid = next_pid++;
@@ -61,11 +65,14 @@ process_t *process_create(const char *name, void (*entry)(void)) {
     }
     proc->name[i] = '\0';
 
-    /* Context will be initialized when we implement context switching */
-    /* For now, just zero it out */
-    proc->context.rip = (uint64_t)entry;
+    /* Set up initial context for first scheduling.
+     * When scheduler calls swtch(), it will jump to forkret,
+     * which calls entry_point.
+     *
+     * NOTE: context is already zeroed in process_init()
+     */
+    proc->context.rip = (uint64_t)forkret;
     proc->context.rsp = (uint64_t)proc->stack + PROCESS_STACK_SIZE;
-    proc->context.rflags = 0x202;  /* Interrupt enable flag */
 
     printf("Process created: pid=%d, name=%s, entry=0x%p, stack=0x%p\n",
            proc->pid, proc->name, entry, proc->stack);
@@ -80,6 +87,14 @@ process_t *process_get(int pid) {
             process_table[i].pid == pid) {
             return &process_table[i];
         }
+    }
+    return NULL;
+}
+
+/* Get process by index (for scheduler) */
+process_t *process_get_by_index(int index) {
+    if (index >= 0 && index < MAX_PROCESSES) {
+        return &process_table[index];
     }
     return NULL;
 }

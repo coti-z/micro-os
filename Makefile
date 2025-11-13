@@ -19,8 +19,12 @@ OBJ = \
 	$(BUILD_DIR)/pic.o \
 	$(BUILD_DIR)/irq_asm.o \
 	$(BUILD_DIR)/memory.o \
+	$(BUILD_DIR)/spinlock.o \
 	$(BUILD_DIR)/process.o \
-	$(BUILD_DIR)/idle_task.o \
+	$(BUILD_DIR)/scheduler.o \
+	$(BUILD_DIR)/swtch.o \
+	$(BUILD_DIR)/process_1.o \
+	$(BUILD_DIR)/process_2.o \
 	$(BUILD_DIR)/serial.o \
 	$(BUILD_DIR)/printf.o \
 	$(BUILD_DIR)/panic.o

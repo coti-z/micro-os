@@ -107,14 +107,18 @@ malloc(uint nbytes)
   }
 }
 
-/* Set memory to value */
+/* Set memory to value - optimized version */
 void *memset(void *s, int c, size_t n) {
     unsigned char *p = (unsigned char *)s;
     unsigned char val = (unsigned char)c;
 
-    for (size_t i = 0; i < n; i++) {
-        p[i] = val;
-    }
+    /* Use rep stosb for fast memory setting */
+    __asm__ volatile(
+        "rep stosb"
+        : "+D"(p), "+c"(n)
+        : "a"(val)
+        : "memory"
+    );
 
     return s;
 }

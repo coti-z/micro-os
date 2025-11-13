@@ -20,6 +20,9 @@ irq0:
     push %r14
     push %r15
 
+    /* Pass stack pointer to timer_handler (System V ABI: first arg in RDI) */
+    mov %rsp, %rdi
+
     /* Call C handler */
     call timer_handler
 

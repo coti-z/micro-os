@@ -21,7 +21,16 @@ C_OBJS  = $(addprefix $(BUILD)/, $(C_SRCS:.c=.o))
 S_OBJS  = $(addprefix $(BUILD)/, $(S_SRCS:.s=.o))
 OBJS    = $(S_OBJS) $(C_OBJS)
 
-.PHONY: all clean qemu
+DISK      = disk.img
+DISKFILES = diskfiles
+GENEXT2FS = genext2fs
+
+USERCC    = x86_64-elf-gcc
+USERFLAGS = -std=c11 -ffreestanding -O2 -fno-builtin -fno-stack-protector \
+            -fno-pic -m64 -mno-sse -mno-sse2 -mno-mmx -mno-avx \
+            -mno-red-zone -nostdlib -Wall -Wextra
+
+.PHONY: all clean qemu disk user
 
 all: $(ISO)
 
@@ -44,12 +53,23 @@ $(ISO_DIR)/boot/grub/grub.cfg: grub.cfg
 $(ISO): $(KERNEL) $(ISO_DIR)/boot/grub/grub.cfg
 	$(MKRSC) -o $@ $(ISO_DIR)
 
+user: $(DISKFILES)/init
+
+$(DISKFILES)/init: user/init.c user/linker.ld
+	$(USERCC) $(USERFLAGS) -T user/linker.ld user/init.c -o $@
+
+disk: user $(DISK)
+
+$(DISK): $(DISKFILES)/init
+	$(GENEXT2FS) -b 16384 -B 1024 -N 1024 -d $(DISKFILES) -L "micro-os" $(DISK)
+
 clean:
 	rm -rf $(BUILD) $(KERNEL) $(ISO)
 
-qemu: $(ISO)
+qemu: $(ISO) $(DISK)
 	qemu-system-x86_64 \
 	    -cdrom $(ISO) \
+	    -drive file=$(DISK),format=raw,if=ide \
 	    -m 512M \
 	    -serial stdio \
 	    -display cocoa,zoom-to-fit=on
